@@ -15,7 +15,8 @@ def run_main():
     config.read('config.ini')
     mysql_items = dict(config.items('Server'))
     port = mysql_items['server_port']
-    url = 'http://localhost/detectClient'
+    ip = mysql_items['server_ip']
+    url = 'http://' + ip + '/detectClient'
     webbrowser.open_new(url)
     main = BASE_PATH + "/detectServer.exe runserver " + port + " --noreload"
     print('--------------------------')

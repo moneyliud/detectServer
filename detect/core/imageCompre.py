@@ -79,7 +79,12 @@ def compare_image_func(image: ImgStore):
                                       diff_count=len(all_result), compare_result=dumps(all_result))
             result.result_img.save(image.part_no + ".jpg", img_file)
             result.save()
-        except Exception:
+            src_image.img_content.file.close()
+            dst_image.img_content.file.close()
+        except Exception as e:
+            print(e)
+            src_image.img_content.file.close()
+            dst_image.img_content.file.close()
             dst_image.compare_status = IMG_COMPARE_STATUS.COMPARE_ERROR.value
             dst_image.save()
         pass

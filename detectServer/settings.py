@@ -24,20 +24,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-a=(o(@5wqleqyaxe52k7i8*u=#c9s116i9ti!0l8c9p(2-_3a4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 # ENVIRONMENT = "DEV"
 ENVIRONMENT = "PRO"
 
-config = configparser.ConfigParser()
-config.read('config.ini')
-mysql_items = dict(config.items('Mysql'))
-MYSQL_NAME = mysql_items['mysql_name']
-MYSQL_HOST = mysql_items['mysql_host']
-MYSQL_PORT = mysql_items['mysql_port']
-MYSQL_USER = mysql_items['mysql_user']
-MYSQL_PASSWORD = mysql_items['mysql_password']
+# config = configparser.ConfigParser()
+# config.read('config.ini')
+# mysql_items = dict(config.items('Mysql'))
+# MYSQL_NAME = mysql_items['mysql_name']
+# MYSQL_HOST = mysql_items['mysql_host']
+# MYSQL_PORT = mysql_items['mysql_port']
+# MYSQL_USER = mysql_items['mysql_user']
+# MYSQL_PASSWORD = mysql_items['mysql_password']
 
 # Application definition
 
@@ -90,14 +90,20 @@ WSGI_APPLICATION = 'detectServer.wsgi.application'
 if ENVIRONMENT == "PRO":
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',  # 数据库引擎
-            'NAME': MYSQL_NAME,  # 数据库名称
-            'HOST': MYSQL_HOST,  # 数据库地址，本机 ip 地址 127.0.0.1
-            'PORT': MYSQL_PORT,  # 端口
-            'USER': MYSQL_USER,  # 数据库用户名
-            'PASSWORD': MYSQL_PASSWORD,  # 数据库密码
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'detectDB.sqlite3'),
         }
     }
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.mysql',  # 数据库引擎
+    #         'NAME': MYSQL_NAME,  # 数据库名称
+    #         'HOST': MYSQL_HOST,  # 数据库地址，本机 ip 地址 127.0.0.1
+    #         'PORT': MYSQL_PORT,  # 端口
+    #         'USER': MYSQL_USER,  # 数据库用户名
+    #         'PASSWORD': MYSQL_PASSWORD,  # 数据库密码
+    #     }
+    # }
 
 if ENVIRONMENT == "DEV":
     DATABASES = {
