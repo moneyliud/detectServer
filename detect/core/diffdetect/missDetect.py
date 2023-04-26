@@ -73,9 +73,9 @@ class MissDetect:
         #                                                                                                    hsv_tolerance=35)
         gray_tolerance = 35
         self.detect_range1, self.mask1 = detectUtil.find_image_primary_area(self.img1,
-                                                                            gray_tolerance=gray_tolerance)
+                                                                            tolerance=gray_tolerance)
         self.detect_range2, self.mask2 = detectUtil.find_image_primary_area(self.img2,
-                                                                            gray_tolerance=gray_tolerance)
+                                                                            tolerance=gray_tolerance)
 
         self.__output_img("detect_range1", self.detect_range1)
         self.__output_img("detect_range2", self.detect_range2)
@@ -96,9 +96,9 @@ class MissDetect:
         self.__output_img("hsv_image1", self.hsv_image1)
         self.__output_img("hsv_image2", self.hsv_image2)
         # kmeans聚类分离图像主体 要放在图像2变换对齐后
-        self.img1_kmeans_res_org, self.img2_kmeans_res_org = self.__kmeans_cluster_img()
-        self.__output_img("img1_kmeans_res_org", self.img1_kmeans_res_org)
-        self.__output_img("img2_kmeans_res_org", self.img2_kmeans_res_org)
+        # self.img1_kmeans_res_org, self.img2_kmeans_res_org = self.__kmeans_cluster_img()
+        # self.__output_img("img1_kmeans_res_org", self.img1_kmeans_res_org)
+        # self.__output_img("img2_kmeans_res_org", self.img2_kmeans_res_org)
         # 转换出灰度图像
         self.img1_gray = cv2.cvtColor(deepcopy(self.img1), cv2.COLOR_BGR2GRAY)
         self.img2_gray = cv2.cvtColor(deepcopy(self.img2), cv2.COLOR_BGR2GRAY)

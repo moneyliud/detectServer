@@ -62,10 +62,14 @@ def dbscan_circle(points, eps=3, min_samples=8):
 
 
 # 根据hsv图像查找图像主体,计算Hsv主体点位凸包
-def find_image_primary_area(image, gray_tolerance=35):
+def find_image_primary_area(image, tolerance=35, detect_type="gray"):
     # primary_color_h, mask, h_img = calculate_hsv_primary_area(image, hsv_tolerance=hsv_tolerance)
-    remove_dark = calculate_gray_primary_area(image, gray_tolerance=gray_tolerance)
-    mask = erode_dilate(remove_dark, (3, 2), (16, 16))
+    mask = None
+    if detect_type == "hsv":
+        primary_color_h, mask, h_img = calculate_hsv_primary_area(image, hsv_tolerance=tolerance)
+    else:
+        mask = calculate_gray_primary_area(image, gray_tolerance=tolerance)
+    mask = erode_dilate(mask, (3, 2), (16, 16))
     mask_points = []
     for i in range(mask.shape[0]):
         for j in range(mask.shape[1]):
@@ -106,20 +110,23 @@ def find_max_n_contours(contours, n, threshold=100):
 
 
 def calculate_gray_primary_area(image, gray_tolerance=35):
-    img1_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    ret, img1_gray = cv2.threshold(img1_gray, gray_tolerance, 255, cv2.THRESH_BINARY)
-    # hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # img1_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # # ret, img1_gray1 = cv2.threshold(img1_gray, gray_tolerance, 255, cv2.THRESH_BINARY)
+    # # ret, img1_gray2 = cv2.threshold(img1_gray, 150, 255, cv2.THRESH_BINARY_INV)
+    ret = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     # h_img = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
-    # for i in range(image.shape[0]):
-    #     for j in range(image.shape[1]):
-    #         if img1_gray[i][j] != 0:
-    #             h_img[i][j] = hsv[i][j][0]
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            # 亮度大于46 且灰度大于43 不为黑色也不为白色
+            if hsv[i][j][2] > 46 and hsv[i][j][1] > 43:
+                ret[i][j] = 255
     # # h 色相通道在335-25之间的红色，且s通道饱和度在70以上的判断为红色笔记
     # if img1_gray[i][j] != 0 and ((335 < hsv[i][j][0] <= 360) or (0 <= hsv[i][j][0] < 25)) and hsv[i][j][1] > 70:
     #     h_img[i][j] = 255
     # else:
     #     h_img[i][j] = 0
-    return img1_gray
+    return ret
 
 
 # 根据hsv图像查找图像主体
@@ -134,7 +141,11 @@ def calculate_hsv_primary_area(image, hsv_tolerance=15):
     for i in range(image.shape[0]):
         for j in range(image.shape[1]):
             if img1_gray[i][j] != 0 and img1_gray[i][j] != 255:
-                h_img[i][j] = hsv[i][j][0]
+                # 白色不参与主体颜色计算
+                if is_white_by_hsv(hsv[i][j]):
+                    h_img[i][j] = 0
+                else:
+                    h_img[i][j] = hsv[i][j][0]
             else:
                 h_img[i][j] = 0
     # 计算图像主体颜色
@@ -164,6 +175,12 @@ def calculate_hsv_primary_area(image, hsv_tolerance=15):
             if hsv_range_lower <= h_img[i][j] <= hsv_range_upper:
                 mask[i][j] = 255
     return max_hist_i, mask, h_img
+
+
+def is_white_by_hsv(hsv):
+    if hsv[1] <= 30 and hsv[2] >= 221:
+        return True
+    return False
 
 
 # 图像侵蚀+膨胀
