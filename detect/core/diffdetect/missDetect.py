@@ -7,6 +7,7 @@ from copy import deepcopy
 import math
 import random
 import detect.core.diffdetect.detectUtil as detectUtil
+import configparser
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -24,6 +25,7 @@ class MissDetect:
         self.img1_contours = None
         self.M = None
         self.sift = cv2.xfeatures2d.SIFT_create()
+        self.orb = cv2.ORB_create(2000)
         self.detectDensity = 2
         self.show_img = False
         self.save_img = False
@@ -46,10 +48,30 @@ class MissDetect:
         self.mask2 = None
         self.remove_dark1 = None
         self.remove_dark2 = None
+        self.mtx = None
+        self.dist = None
+        try:
+            self.read_config()
+        except Exception as e:
+            print(e)
+            pass
+
+    def read_config(self):
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        camera_items = dict(config.items('Camera'))
+        if camera_items:
+            mtx_tmp = camera_items['mtx']
+            dist_tmp = camera_items['dist']
+            self.mtx = np.float32(mtx_tmp.split(",")).reshape(3, 3)
+            self.dist = np.float32([dist_tmp.split(",")])
+            print(self.mtx)
+            print(self.dist)
 
     def detect(self, img1, img2):
         self.img1 = img1
         self.img2 = img2
+
         self.min_shape = 1800
         if self.img1.shape[0] < self.img1.shape[1]:
             self.img1 = cv2.resize(self.img1, dsize=(
@@ -63,8 +85,17 @@ class MissDetect:
                 int(self.min_shape * self.img1.shape[1] / self.img1.shape[0]), self.min_shape))
 
         # 原始图像深拷贝
-        self.img1_org = deepcopy(self.img1)
-        self.img2_org = deepcopy(self.img2)
+        self.img1_org = self.img1.copy()
+        self.img2_org = self.img2.copy()
+
+        # 图像畸变矫正
+        # self.detect_range1 = self.__distort_image(self.detect_range1)
+        # self.detect_range2 = self.__distort_image(self.detect_range2)
+        if self.mtx is not None and self.dist is not None:
+            self.img1 = self.__distort_image(self.img1)
+            self.img2 = self.__distort_image(self.img2)
+            self.__output_img("distort1", self.img1)
+            self.__output_img("distort12", self.img2)
 
         # 计算特征识别范围,SIFT计算单应性变换矩阵要用,并获取hsv图中的h色相通道图
         # primary_color1, self.detect_range1, self.hsv_image1, self.mask1 = detectUtil.find_image_primary_area(self.img1,
@@ -85,11 +116,10 @@ class MissDetect:
         self.key_point_size = int(self.img1.shape[1] * 0.0025)
         # 计算单应性变换矩阵
         self.M, mask = self.__calculate_convert_matrix()
-        self.h, self.w = self.img2.shape[:2]
+        self.h, self.w = self.img1_org.shape[:2]
         # 图像2变换对齐
         self.img2 = cv2.warpPerspective(self.img2, np.linalg.inv(self.M), (self.w, self.h))
         self.img2_org_warp = cv2.warpPerspective(self.img2_org, np.linalg.inv(self.M), (self.w, self.h))
-
         # 图像亮度统一
         self.img1, self.img2, self.hsv_image1, self.hsv_image2 = detectUtil.fit_image_brightness(self.img1, self.img2,
                                                                                                  self.detect_range1)
@@ -102,6 +132,12 @@ class MissDetect:
         # 转换出灰度图像
         self.img1_gray = cv2.cvtColor(deepcopy(self.img1), cv2.COLOR_BGR2GRAY)
         self.img2_gray = cv2.cvtColor(deepcopy(self.img2), cv2.COLOR_BGR2GRAY)
+
+        for i in range(self.img1_gray.shape[0]):
+            for j in range(self.img1_gray.shape[1]):
+                if self.detect_range1[i, j] == 0:
+                    self.img1_gray[i, j] = 0
+                    self.img2_gray[i, j] = 0
 
         tmp1, self.remove_dark1 = cv2.threshold(self.img1_gray, gray_tolerance, 255, cv2.THRESH_BINARY)
         tmp2, self.remove_dark2 = cv2.threshold(self.img2_gray, gray_tolerance, 255, cv2.THRESH_BINARY)
@@ -618,9 +654,16 @@ class MissDetect:
     # 计算图像单应性变换矩阵
     def __calculate_convert_matrix(self):
         # 检测关键点
-        kp1, des1 = self.sift.detectAndCompute(self.img1, None)
-        kp2, des2 = self.sift.detectAndCompute(self.img2, None)
-
+        detect_type = "orb"
+        matches = []
+        if detect_type == "orb":
+            # orb
+            kp1, des1 = self.orb.detectAndCompute(self.img1, None)
+            kp2, des2 = self.orb.detectAndCompute(self.img2, None)
+        else:
+            # sift
+            kp1, des1 = self.sift.detectAndCompute(self.img1, None)
+            kp2, des2 = self.sift.detectAndCompute(self.img2, None)
         # 根据主体识别范围进行过滤
         kp1, des1 = detectUtil.sift_key_point_filter(kp1, des1, self.detect_range1)
         kp2, des2 = detectUtil.sift_key_point_filter(kp2, des2, self.detect_range2)
@@ -630,17 +673,23 @@ class MissDetect:
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=6)
         search_params = dict(checks=10)
 
-        flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-        # matches = cv2.BFMatcher(cv2.NORM_HAMMING).match(des1, des2)
-        matches = flann.knnMatch(des1, des2, k=2)
+        if detect_type == "orb":
+            matches = cv2.BFMatcher(cv2.NORM_HAMMING).match(des1, des2)
+        else:
+            # sift
+            flann = cv2.FlannBasedMatcher(index_params, search_params)
+            matches = flann.knnMatch(des1, des2, k=2)
 
         good = []
-
-        for m, n in matches:
-            if m.distance < 0.7 * n.distance:
-                # if m.distance < 0.7 * n.distance:
-                good.append(m)
+        if detect_type == "orb":
+            for i in matches:
+                if i.distance < 50:
+                    good.append(i)
+        else:
+            for m, n in matches:
+                if m.distance < 0.7 * n.distance:
+                    # if m.distance < 0.7 * n.distance:
+                    good.append(m)
 
         # 把good中的左右点分别提出来找单应性变换
         pts_src = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
@@ -804,11 +853,11 @@ class MissDetect:
         pass
 
     def __get_contrast_img(self):
-        heightO = max(self.img1.shape[0], self.img2.shape[0])
-        widthO = self.img1.shape[1] + self.img1.shape[1]
+        heightO = max(self.img1_org.shape[0], self.img2_org_warp.shape[0])
+        widthO = self.img1_org.shape[1] + self.img2_org_warp.shape[1]
         contrast_img = np.zeros((heightO, widthO, 3), dtype=np.uint8)
-        contrast_img[0:self.img1_org.shape[0], 0:self.img1_org.shape[1]] = self.img1_org
-        contrast_img[0:self.img2_org_warp.shape[0], self.img2_org_warp.shape[1]:] = self.img2_org_warp[:]
+        contrast_img[0:self.img1_org.shape[0], 0:self.img1_org.shape[1]] = self.img1
+        contrast_img[0:self.img2_org_warp.shape[0], self.img1_org.shape[1]:] = self.img2[:]
         return contrast_img
 
     def __show_difference_point(self, same_point_src, same_point_dst, diff_left, diff_right, name="difference"):
@@ -954,3 +1003,10 @@ class MissDetect:
                 os.makedirs(dir_path)
             # print(dir_path + name + ".jpg")
             cv2.imwrite(dir_path + name + ".jpg", img)
+
+    def __distort_image(self, img):
+        h, w = img.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w, h), 1, (w, h))  # 自由比例参数
+        dst = cv2.undistort(img, self.mtx, self.dist, None, newcameramtx)
+        # dst = cv2.undistort(img, self.mtx, self.dist, None, None)
+        return dst

@@ -5,11 +5,11 @@ block_cipher = None
 
 
 a = Analysis(
-    ['manage.py'],
+    ['E:\\pyWorkSpace\\detectServer\\test.py'],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=["detect"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -26,7 +26,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='detectServer',
+    name='test',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -46,5 +46,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='detectServer',
+    name='test',
 )

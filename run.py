@@ -19,11 +19,11 @@ def run_main():
     url = 'http://' + ip + '/detectClient'
     webbrowser.open_new(url)
     main = BASE_PATH + "/detectServer.exe runserver " + port + " --noreload"
+    # os.system(main)
+    res = subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print(res)
     print('--------------------------')
     print('系统已运行，可关闭此终端.')
     print('--------------------------')
-    # os.system(main)
-    res = subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
 
 run_main()

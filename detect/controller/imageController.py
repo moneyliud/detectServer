@@ -1,17 +1,15 @@
 import json
 
-from django.shortcuts import render
 from detect.models import ImgStore, ImgCompareResult, ImgCompareResultV, SysDict, SysDictItem
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from detect.util.convertor import model_obj_to_dict
 from detect.util.filter import get_filter_by_request
-from django.http import QueryDict
 from detect.core.imageCompre import compare_image
 import cv2
 import numpy as np
-import os
 from io import BytesIO
 from django.core.files import File
+from detect.camera.cameraFactory import CameraFactory
 
 # Create your views here.
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -78,7 +76,7 @@ def image_upload(request):
     if image is None:
         return JsonResponse({"msg": "请选择上传文件！"})
 
-    #缩小图片
+    # 缩小图片
     resize_image = cv2.imdecode(np.frombuffer(image.read(), np.uint8), cv2.IMREAD_COLOR)
     min_width = 1800
     resize_image = cv2.resize(resize_image, dsize=(
@@ -120,3 +118,30 @@ def get_dict_item(request):
     if len(ret) > 0:
         data = list(SysDictItem.objects.filter(dict_id=ret[0].dict_id).order_by('dict_index'))
     return JsonResponse({"data": [model_obj_to_dict(i) for i in data]})
+
+
+def get_camera_stream(request):
+    factory = CameraFactory()
+    msg, camera = factory.get_camera()
+    # 初始化成功
+    if msg == 0:
+        return StreamingHttpResponse(gen_display(camera), content_type='multipart/x-mixed-replace; boundary=frame')
+    else:
+        return JsonResponse({"msg": "摄像头打开失败！"})
+
+
+def gen_display(camera):
+    """
+    视频流生成器功能。
+    """
+    while True:
+        # 读取图片
+        frame = camera.get_image()
+        if frame is not None:
+            frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+            # 将图片进行解码
+            ret, frame = cv2.imencode('.jpeg', frame)
+            if ret:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+    camera.close()

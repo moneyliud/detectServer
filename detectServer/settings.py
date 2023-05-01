@@ -40,18 +40,29 @@ ENVIRONMENT = "PRO"
 # MYSQL_PASSWORD = mysql_items['mysql_password']
 
 # Application definition
+# ASGI_APPLICATION = 'detectServer.routing.application'
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'detect'
+    'detect',
+    'detectServer'
 ]
 
+ASGI_APPLICATION = 'detectServer.asgi.application'
+
 CORS_ALLOW_CREDENTIALS = True
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -81,8 +92,6 @@ TEMPLATES = [
         },
     },
 ]
-
-WSGI_APPLICATION = 'detectServer.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
