@@ -19,6 +19,7 @@ class CameraFactory:
                 return 0, camera
             except Exception as e:
                 ret_e += str(e)
+                return ret_e, None
                 pass
         if not init_flag:
             return "摄像头初始化失败:\n" + ret_e, None

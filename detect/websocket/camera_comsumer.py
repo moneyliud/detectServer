@@ -41,4 +41,5 @@ class CameraWebsocketConsumer(AsyncWebsocketConsumer):
 
     async def send_image(self, event):
         print("send", time.time())
-        await self.send(text_data=None, bytes_data=event["message"])
+        if event["valid"] is True:
+            await self.send(text_data=None, bytes_data=event["message"])

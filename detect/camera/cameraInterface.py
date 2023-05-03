@@ -11,6 +11,7 @@ class CameraInterface:
         self.run_flag = True
         self.event = Event()
         self.camera_thread = Thread(target=self.start_get_image, args=(self.event,))
+        self.channel_layer = get_channel_layer()
 
     def start(self):
         self.camera_thread.start()
@@ -27,15 +28,27 @@ class CameraInterface:
                 frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
                 # 将图片进行解码
                 ret, frame = cv2.imencode('.jpeg', frame)
-                channel_layer = get_channel_layer()
                 print(time.time())
-                async_to_sync(channel_layer.group_send)(
+                async_to_sync(self.channel_layer.group_send)(
                     "camera",
                     {
                         'type': 'send_image',
-                        'message': frame.tobytes()
+                        'message': frame.tobytes(),
+                        'valid': True
                     }
                 )
+                # for i in range(4):
+                #     self.send_none()
+
+    def send_none(self):
+        async_to_sync(self.channel_layer.group_send)(
+            "camera",
+            {
+                'type': 'send_image',
+                'message': None,
+                'valid': False
+            }
+        )
 
     @abstractmethod
     def open(self):

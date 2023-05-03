@@ -125,8 +125,13 @@ def get_camera_stream(request):
     msg, camera = factory.get_camera()
     # 初始化成功
     if msg == 0:
-        return StreamingHttpResponse(gen_display(camera), content_type='multipart/x-mixed-replace; boundary=frame')
+        try:
+            return StreamingHttpResponse(gen_display(camera), content_type='multipart/x-mixed-replace; boundary=frame')
+        except Exception  as e:
+            camera.close()
+            print(e)
     else:
+        print(msg)
         return JsonResponse({"msg": "摄像头打开失败！"})
 
 
@@ -144,4 +149,3 @@ def gen_display(camera):
             if ret:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-    camera.close()
