@@ -6,9 +6,9 @@ import cv2
 import numpy as np
 
 if __name__ == '__main__':
-    path = 'C:/Users/Administrator/Pictures'
-    path1 = path + '/微信图片_20230427214256.jpg'
-    path2 = path + '/微信图片_20230427214253.jpg'
+    path = './'
+    path1 = path + '1.jpg'
+    path2 = path + '2.jpg'
 
     # 载入图像
     img1 = cv2.imdecode(np.fromfile(path1, dtype=np.uint8), -1)

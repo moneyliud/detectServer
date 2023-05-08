@@ -7,6 +7,7 @@ from copy import deepcopy
 import math
 import random
 import detect.core.diffdetect.detectUtil as detectUtil
+import configparser
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -47,11 +48,25 @@ class MissDetect:
         self.mask2 = None
         self.remove_dark1 = None
         self.remove_dark2 = None
-        self.mtx = np.array([[1.41198791e+03, 0.00000000e+00, 6.80102996e+02],
-                             [0.00000000e+00, 1.41208078e+03, 9.04382079e+02],
-                             [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
-        self.dist = np.array([[-2.92432027e-03, 2.73220082e-01, 1.15161400e-03, 4.61783815e-04,
-                               -6.13711620e-01]])
+        self.mtx = None
+        self.dist = None
+        try:
+            self.read_config()
+        except Exception as e:
+            print(e)
+            pass
+
+    def read_config(self):
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        camera_items = dict(config.items('Camera'))
+        if camera_items:
+            mtx_tmp = camera_items['mtx']
+            dist_tmp = camera_items['dist']
+            self.mtx = np.float32(mtx_tmp.split(",")).reshape(3, 3)
+            self.dist = np.float32([dist_tmp.split(",")])
+            print(self.mtx)
+            print(self.dist)
 
     def detect(self, img1, img2):
         self.img1 = img1
@@ -76,10 +91,11 @@ class MissDetect:
         # 图像畸变矫正
         # self.detect_range1 = self.__distort_image(self.detect_range1)
         # self.detect_range2 = self.__distort_image(self.detect_range2)
-        self.img1 = self.__distort_image(self.img1)
-        self.img2 = self.__distort_image(self.img2)
-        self.__output_img("distort1", self.img1)
-        self.__output_img("distort12", self.img2)
+        if self.mtx is not None and self.dist is not None:
+            self.img1 = self.__distort_image(self.img1)
+            self.img2 = self.__distort_image(self.img2)
+            self.__output_img("distort1", self.img1)
+            self.__output_img("distort12", self.img2)
 
         # 计算特征识别范围,SIFT计算单应性变换矩阵要用,并获取hsv图中的h色相通道图
         # primary_color1, self.detect_range1, self.hsv_image1, self.mask1 = detectUtil.find_image_primary_area(self.img1,
