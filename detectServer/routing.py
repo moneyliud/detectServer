@@ -4,5 +4,5 @@ from django.urls import re_path
 from detect.websocket import camera_comsumer
 
 websocket_urlpatterns = [
-    re_path(r"ws/camera/", camera_comsumer.CameraWebsocketConsumer.as_asgi()),
+    # re_path(r"ws/camera/", camera_comsumer.CameraWebsocketConsumer.as_asgi()),
 ]

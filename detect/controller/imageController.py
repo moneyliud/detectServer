@@ -1,9 +1,9 @@
 import json
 
-from detect.models import ImgStore, ImgCompareResult, ImgCompareResultV, SysDict, SysDictItem
+from detect.djangomodels import ImgStore, ImgCompareResult, ImgCompareResultV, SysDict, SysDictItem
 from django.http import JsonResponse, StreamingHttpResponse
-from detect.util.convertor import model_obj_to_dict
-from detect.util.filter import get_filter_by_request
+from detect.utils.convertor import model_obj_to_dict
+from detect.utils.filter import get_filter_by_request
 from detect.core.imageCompre import compare_image
 import cv2
 import numpy as np
@@ -127,7 +127,7 @@ def get_camera_stream(request):
     if msg == 0:
         try:
             return StreamingHttpResponse(gen_display(camera), content_type='multipart/x-mixed-replace; boundary=frame')
-        except Exception  as e:
+        except Exception as e:
             camera.close()
             print(e)
     else:

@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='imgcompareresult',
             name='result_img',
-            field=models.ImageField(blank=True, help_text='图像对比结果', null=True, upload_to=detect.models.result_image_dir_path),
+            field=models.ImageField(blank=True, help_text='图像对比结果', null=True, upload_to=detect.djangomodels.result_image_dir_path),
         ),
         migrations.AlterField(
             model_name='imgstore',

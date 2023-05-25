@@ -1,5 +1,5 @@
 from django.contrib import admin
-from detect.models import SysDict, SysDictItem
+from detect.djangomodels import SysDict, SysDictItem
 
 
 # Register your models here.

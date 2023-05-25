@@ -2,8 +2,9 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 from django.core.files import File
 
-from detect.models import ImgStore, ImgCompareResult, IMG_COMPARE_STATUS
+from detect.djangomodels import ImgStore, ImgCompareResult, IMG_COMPARE_STATUS
 from detect.core.diffdetect.missDetect import MissDetect
+from detect.core.diffdetect.deepDetect import DeepDetect
 from pickle import dumps
 import cv2
 import numpy as np
@@ -62,7 +63,7 @@ def compare_image_func(image: ImgStore):
         dst_image = image
         dst_image.is_basic_img = False
         dst_image.save()
-        detector = MissDetect()
+        detector = DeepDetect()
         src_image_cv = cv2.imdecode(np.frombuffer(src_image.img_content.file.read(), np.uint8), cv2.IMREAD_COLOR)
         dst_image_cv = cv2.imdecode(np.frombuffer(dst_image.img_content.file.read(), np.uint8), cv2.IMREAD_COLOR)
         try:

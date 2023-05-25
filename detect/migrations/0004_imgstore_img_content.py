@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='imgstore',
             name='img_content',
-            field=models.ImageField(blank=True, help_text='图像内容', null=True, upload_to=detect.models.image_dir_path),
+            field=models.ImageField(blank=True, help_text='图像内容', null=True, upload_to=detect.djangomodels.image_dir_path),
         ),
     ]

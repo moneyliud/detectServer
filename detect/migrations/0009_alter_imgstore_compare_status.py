@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='imgstore',
             name='compare_status',
-            field=models.CharField(default=detect.models.IMG_COMPARE_STATUS['UN_COMPARE'], max_length=20, verbose_name='对比状态'),
+            field=models.CharField(default=detect.djangomodels.IMG_COMPARE_STATUS['UN_COMPARE'], max_length=20, verbose_name='对比状态'),
         ),
     ]

@@ -70,18 +70,8 @@ def find_image_primary_area(image, tolerance=35, detect_type="gray"):
     else:
         mask = calculate_gray_primary_area(image, gray_tolerance=tolerance)
     mask = erode_dilate(mask, (3, 2), (16, 16))
-    mask_points = []
-    for i in range(mask.shape[0]):
-        for j in range(mask.shape[1]):
-            if mask[i][j] == 255:
-                mask_points.append([[j, i]])
     img1_contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
     max_n_contour = find_max_n_contours(img1_contours, 1)
-    # all_points = max_n_contour[0]
-    # for i in range(1, len(max_n_contour)):
-    #     if max_n_contour[i] is not None:
-    #         all_points = np.concatenate((all_points, max_n_contour[i]), axis=0)
-    # mask_hull = cv2.convexHull(all_points)
     image_range = cv2.drawContours(np.zeros((image.shape[0], image.shape[1])), [max_n_contour[0]], -1, (255, 255, 255),
                                    cv2.FILLED)
     return image_range, mask
@@ -116,11 +106,13 @@ def calculate_gray_primary_area(image, gray_tolerance=35):
     ret = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     # h_img = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            # 亮度大于46 且灰度大于43 不为黑色也不为白色
-            if hsv[i][j][2] > 46 and hsv[i][j][1] > 43:
-                ret[i][j] = 255
+    # for i in range(image.shape[0]):
+    #     for j in range(image.shape[1]):
+    #         # 亮度大于46 且灰度大于43 不为黑色也不为白色
+    #         if hsv[i][j][2] > 46 and hsv[i][j][1] > 43:
+    #             ret[i][j] = 255
+    # 亮度大于46 且灰度大于43 不为黑色也不为白色
+    ret = np.uint8(np.where((hsv[:, :, 2] > 46) & (hsv[:, :, 1] > 43), 255, 0))
     # # h 色相通道在335-25之间的红色，且s通道饱和度在70以上的判断为红色笔记
     # if img1_gray[i][j] != 0 and ((335 < hsv[i][j][0] <= 360) or (0 <= hsv[i][j][0] < 25)) and hsv[i][j][1] > 70:
     #     h_img[i][j] = 255
