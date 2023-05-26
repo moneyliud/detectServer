@@ -5,6 +5,8 @@ import subprocess
 import configparser
 
 BASE_PATH = os.path.abspath('.')
+
+
 # 重复点击开始即关闭原来服务重新打开
 os.system('TASKKILL /F /IM detectServer.exe')
 
@@ -18,12 +20,13 @@ def run_main():
     ip = mysql_items['server_ip']
     url = 'http://' + ip + '/detectClient'
     webbrowser.open_new(url)
-    main = BASE_PATH + "/detectServer.exe runserver " + port + " --noreload"
-    # os.system(main)
-    res = subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print(res)
+    print(BASE_PATH)
+    main = BASE_PATH + "\\detectServer.exe runserver " + port + " --noreload"
     print('--------------------------')
     print('系统已运行，可关闭此终端.')
     print('--------------------------')
+    os.system(main)
+    # subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 
 run_main()

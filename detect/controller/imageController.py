@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 from io import BytesIO
 from django.core.files import File
-from detect.camera.cameraFactory import CameraFactory
+# from detect.camera.cameraFactory import CameraFactory
 
 # Create your views here.
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -120,19 +120,19 @@ def get_dict_item(request):
     return JsonResponse({"data": [model_obj_to_dict(i) for i in data]})
 
 
-def get_camera_stream(request):
-    factory = CameraFactory()
-    msg, camera = factory.get_camera()
-    # 初始化成功
-    if msg == 0:
-        try:
-            return StreamingHttpResponse(gen_display(camera), content_type='multipart/x-mixed-replace; boundary=frame')
-        except Exception as e:
-            camera.close()
-            print(e)
-    else:
-        print(msg)
-        return JsonResponse({"msg": "摄像头打开失败！"})
+# def get_camera_stream(request):
+#     factory = CameraFactory()
+#     msg, camera = factory.get_camera()
+#     # 初始化成功
+#     if msg == 0:
+#         try:
+#             return StreamingHttpResponse(gen_display(camera), content_type='multipart/x-mixed-replace; boundary=frame')
+#         except Exception as e:
+#             camera.close()
+#             print(e)
+#     else:
+#         print(msg)
+#         return JsonResponse({"msg": "摄像头打开失败！"})
 
 
 def gen_display(camera):

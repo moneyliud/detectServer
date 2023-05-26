@@ -11,5 +11,5 @@ urlpatterns = [
     path("get_dict_item/", imageController.get_dict_item, name="get_dict_item"),
     path("set_basic_img/", imageController.set_basic_img, name="set_basic_img"),
     path("get_image_list_all/", imageController.get_image_list_all, name="get_image_list_all"),
-    path("get_camera_stream/", imageController.get_camera_stream, name="get_camera_stream")
+    # path("get_camera_stream/", imageController.get_camera_stream, name="get_camera_stream")
 ]

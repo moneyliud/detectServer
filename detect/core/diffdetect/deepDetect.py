@@ -10,56 +10,34 @@ from copy import deepcopy
 
 import detect.core.diffdetect.detectUtil as detectUtil
 from detect.models.common import DetectMultiBackend
-from detect.utils.augmentations import (Albumentations, augment_hsv, classify_albumentations, classify_transforms,
-                                        copy_paste,
-                                        letterbox, mixup, random_perspective)
-from detect.utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadScreenshots, LoadStreams
-from detect.utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements,
-                                  colorstr, cv2,
-                                  increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer,
-                                  xyxy2xywh)
-from detect.utils.plots import Annotator, colors, save_one_box
-from detect.utils.torch_utils import select_device, smart_inference_mode
+from detect.utils.augmentations import (letterbox)
+from detect.utils.general import (Profile, check_img_size, non_max_suppression, scale_boxes)
+from detect.utils.torch_utils import select_device
 from detect.utils.metrics import box_iou
 
 cv2.ocl.setUseOpenCL(False)
 
 
 class DeepDetect:
-    def __init__(self, threshold=400, min_shape=1000):
-        self.hsv_image2 = None
-        self.hsv_image1 = None
-        self.img2_warp = None
-        self.img2_org_warp = None
-        self.img1_kmeans_res_org = None
-        self.img2_kmeans_res_org = None
+    def __init__(self, min_shape=1000):
         self.dir = ""
-        self.img2_contours = None
-        self.img1_contours = None
         self.M = None
         self.orb = cv2.ORB_create(2000)
-        self.detectDensity = 2
         self.show_img = False
         self.save_img = False
-        self.threshold = threshold
         self.min_shape = min_shape
         self.img1 = None
         self.img2 = None
         self.img1_org = None
         self.img2_org = None
-        self.img2_gray = None
-        self.img1_gray = None
         self.h = None
         self.w = None
         self.detect_range1 = None
         self.detect_range2 = None
         # 最小差异点数量
-        self.least_diff_point_num = 7
         self.key_point_size = 0
         self.mask1 = None
         self.mask2 = None
-        self.remove_dark1 = None
-        self.remove_dark2 = None
         self.mtx = None
         self.dist = None
         self.image_size = [640, 640]  # inference size (height, width)
@@ -76,22 +54,21 @@ class DeepDetect:
         self.class_filter = None
         self.class_names = None
         self.draw_label = True
-        # try:
-        self.read_config()
-        self.load_deep_model()
-        # except Exception as e:
-        #     print(e)
-        #     pass
+        try:
+            self.read_config()
+            # self.load_deep_model()
+        except Exception as e:
+            print(e)
+            pass
 
     def load_deep_model(self):
         device = select_device('cpu')
         self.model = DetectMultiBackend(self.model_path, device=device, dnn=False, data=None, fp16=False)
-        stride, names, pt = self.model.stride, self.model.names, self.model.pt
-        self.image_size = check_img_size(self.image_size, s=stride)  # check image size
-        # Run inference
-        bs = 1  # batch_size
-        self.model.warmup(imgsz=(1 if pt or self.model.triton else bs, 3, *self.image_size))  # warmup
-        seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+        # stride, names, pt = self.model.stride, self.model.names, self.model.pt
+        # self.image_size = check_img_size(self.image_size, s=stride)  # check image size
+        # # Run inference
+        # bs = 1  # batch_size
+        # self.model.warmup(imgsz=(1 if pt or self.model.triton else bs, 3, *self.image_size))  # warmup
 
     def read_config(self):
         config = configparser.ConfigParser()
@@ -144,9 +121,9 @@ class DeepDetect:
 
         result1 = self.__detect_one_image(self.img1)
         result2 = self.__detect_one_image(self.img2)
-        print(result1, result2)
+        # print(result1, result2)
         same_obj, diff_obj = self.__find_difference(result1, result2)
-        print(same_obj, diff_obj)
+        # print(same_obj, diff_obj)
         out_img = self.__draw_result(same_obj, diff_obj)
         all_result = diff_obj
         self.__output_img("result", out_img)
@@ -207,6 +184,7 @@ class DeepDetect:
                         lineType=cv2.LINE_AA)
 
     def __detect_one_image(self, im0):
+        return torch.tensor([])
         im = letterbox(im0, self.image_size, stride=self.stride, auto=True)[0]  # padded resize
         im = im.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         im = np.ascontiguousarray(im)  # contiguous

@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+import sys
+sys.setrecursionlimit(sys.getrecursionlimit()*5)
 
 block_cipher = None
 
@@ -9,7 +10,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['detect','detect.utils'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

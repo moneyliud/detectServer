@@ -46,6 +46,7 @@ def compare_image(image: ImgStore):
         image = stored_img[0]
         if image.compare_status == IMG_COMPARE_STATUS.COMPARING.value:
             raise RuntimeError("图片已在对比中！")
+    # compare_image_func(image)
     future = image_thread_pool.executor.submit(compare_image_func, image)
     pass
 
@@ -80,8 +81,10 @@ def compare_image_func(image: ImgStore):
                                       diff_count=len(all_result), compare_result=dumps(all_result))
             result.result_img.save(image.part_no + ".jpg", img_file)
             result.save()
+            print("save end")
             src_image.img_content.file.close()
             dst_image.img_content.file.close()
+            print("file closed")
         except Exception as e:
             print(e)
             src_image.img_content.file.close()
