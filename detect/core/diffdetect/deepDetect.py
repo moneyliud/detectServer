@@ -56,19 +56,20 @@ class DeepDetect:
         self.draw_label = True
         try:
             self.read_config()
-            # self.load_deep_model()
+            self.load_deep_model()
         except Exception as e:
             print(e)
             pass
 
     def load_deep_model(self):
-        device = select_device('cpu')
+        # device = select_device('cpu')
+        device = torch.device('cpu')
         self.model = DetectMultiBackend(self.model_path, device=device, dnn=False, data=None, fp16=False)
-        # stride, names, pt = self.model.stride, self.model.names, self.model.pt
-        # self.image_size = check_img_size(self.image_size, s=stride)  # check image size
-        # # Run inference
-        # bs = 1  # batch_size
-        # self.model.warmup(imgsz=(1 if pt or self.model.triton else bs, 3, *self.image_size))  # warmup
+        stride, names, pt = self.model.stride, self.model.names, self.model.pt
+        self.image_size = check_img_size(self.image_size, s=stride)  # check image size
+        # Run inference
+        bs = 1  # batch_size
+        self.model.warmup(imgsz=(1 if pt or self.model.triton else bs, 3, *self.image_size))  # warmup
 
     def read_config(self):
         config = configparser.ConfigParser()
@@ -184,7 +185,7 @@ class DeepDetect:
                         lineType=cv2.LINE_AA)
 
     def __detect_one_image(self, im0):
-        return torch.tensor([])
+        # return torch.tensor([])
         im = letterbox(im0, self.image_size, stride=self.stride, auto=True)[0]  # padded resize
         im = im.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         im = np.ascontiguousarray(im)  # contiguous

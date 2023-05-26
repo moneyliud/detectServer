@@ -3,9 +3,9 @@ import sys
 import webbrowser
 import subprocess
 import configparser
+from time import sleep
 
 BASE_PATH = os.path.abspath('.')
-
 
 # 重复点击开始即关闭原来服务重新打开
 os.system('TASKKILL /F /IM detectServer.exe')
@@ -25,8 +25,9 @@ def run_main():
     print('--------------------------')
     print('系统已运行，可关闭此终端.')
     print('--------------------------')
-    os.system(main)
-    # subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # os.system(main)
+    res = subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    sleep(5)
 
 
 run_main()
