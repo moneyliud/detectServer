@@ -136,10 +136,9 @@ class DeepDetect:
         for i in range(len(result1)):
             for j in range(len(result2)):
                 iou_result = box_iou(result1[i][0:4].unsqueeze(0), result2[j][0:4].unsqueeze(0)).squeeze(0)
-                if not used_flag2[j] and iou_result > self.iou_threshold:
+                if iou_result > self.iou_threshold:
                     used_flag1[i] = True
                     used_flag2[j] = True
-                    break
         same_obj, diff_obj = [], []
         for i in range(len(result1)):
             if used_flag1[i]:

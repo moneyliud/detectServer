@@ -26,8 +26,12 @@ def run_main():
     print('系统已运行，可关闭此终端.')
     print('--------------------------')
     # os.system(main)
-    res = subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    sleep(5)
+    proc = subprocess.Popen(main, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.stdin.close()  # 既然没有命令行窗口，那就关闭输入
+    proc.wait()
+    result = proc.stdout.read()  # 读取cmd执行的输出结果（是byte类型，需要decode）
+    proc.stdout.close()
+    print(result)
 
 
 run_main()

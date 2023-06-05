@@ -1,5 +1,6 @@
 import json
 
+import django.core.management.base
 from detect.djangomodels import ImgStore, ImgCompareResult, ImgCompareResultV, SysDict, SysDictItem
 from django.http import JsonResponse, StreamingHttpResponse
 from detect.utils.convertor import model_obj_to_dict
