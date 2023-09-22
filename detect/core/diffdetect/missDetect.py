@@ -24,7 +24,7 @@ class MissDetect:
         self.img2_contours = None
         self.img1_contours = None
         self.M = None
-        self.sift = cv2.xfeatures2d.SIFT_create()
+        self.sift = cv2.SIFT_create()
         self.orb = cv2.ORB_create(2000)
         self.detectDensity = 2
         self.show_img = False
@@ -132,6 +132,8 @@ class MissDetect:
         # 转换出灰度图像
         self.img1_gray = cv2.cvtColor(deepcopy(self.img1), cv2.COLOR_BGR2GRAY)
         self.img2_gray = cv2.cvtColor(deepcopy(self.img2), cv2.COLOR_BGR2GRAY)
+        self.__output_img("img1_gray", self.img1_gray)
+        self.__output_img("img2_gray", self.img2_gray)
 
         for i in range(self.img1_gray.shape[0]):
             for j in range(self.img1_gray.shape[1]):
