@@ -64,7 +64,7 @@ def compare_image_func(image: ImgStore):
         dst_image = image
         dst_image.is_basic_img = False
         dst_image.save()
-        detector = DeepDetect()
+        detector = MissDetect()
         src_image_cv = cv2.imdecode(np.frombuffer(src_image.img_content.file.read(), np.uint8), cv2.IMREAD_COLOR)
         dst_image_cv = cv2.imdecode(np.frombuffer(dst_image.img_content.file.read(), np.uint8), cv2.IMREAD_COLOR)
         try:
