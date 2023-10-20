@@ -1,6 +1,6 @@
 import time
 
-from detect.core.diffdetect import missDetect
+from detect.core.diffdetect import deepDetect, missDetect
 import os
 import cv2
 import numpy as np

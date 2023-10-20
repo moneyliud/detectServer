@@ -132,6 +132,8 @@ class MissDetect:
         # 转换出灰度图像
         self.img1_gray = cv2.cvtColor(deepcopy(self.img1), cv2.COLOR_BGR2GRAY)
         self.img2_gray = cv2.cvtColor(deepcopy(self.img2), cv2.COLOR_BGR2GRAY)
+        self.__output_img("img1_gray", self.img1_gray)
+        self.__output_img("img2_gray", self.img2_gray)
 
         for i in range(self.img1_gray.shape[0]):
             for j in range(self.img1_gray.shape[1]):
