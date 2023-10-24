@@ -112,7 +112,7 @@ def calculate_gray_primary_area(image, gray_tolerance=35):
     #         if hsv[i][j][2] > 46 and hsv[i][j][1] > 43:
     #             ret[i][j] = 255
     # 亮度大于46 且灰度大于43 不为黑色也不为白色
-    ret = np.uint8(np.where((hsv[:, :, 2] > 46) & (hsv[:, :, 1] > 43), 255, 0))
+    ret = np.uint8(np.where((hsv[:, :, 2] > 60) & (hsv[:, :, 1] > 55), 255, 0))
     # # h 色相通道在335-25之间的红色，且s通道饱和度在70以上的判断为红色笔记
     # if img1_gray[i][j] != 0 and ((335 < hsv[i][j][0] <= 360) or (0 <= hsv[i][j][0] < 25)) and hsv[i][j][1] > 70:
     #     h_img[i][j] = 255

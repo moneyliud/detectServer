@@ -120,8 +120,12 @@ class DeepDetect:
         # 图像2变换对齐
         self.img2 = cv2.warpPerspective(self.img2, np.linalg.inv(self.M), (self.w, self.h))
 
-        result1 = self.__detect_one_image(self.img1)
-        result2 = self.__detect_one_image(self.img2)
+        img1_r = self.img1.copy()
+        img2_r = self.img2.copy()
+        img1_r[np.where(self.detect_range1[:, :] == 0)] = [0, 0, 0]
+        img2_r[np.where(self.detect_range2[:, :] == 0)] = [0, 0, 0]
+        result1 = self.__detect_one_image(img1_r)
+        result2 = self.__detect_one_image(img2_r)
         # print(result1, result2)
         same_obj, diff_obj = self.__find_difference(result1, result2)
         # print(same_obj, diff_obj)

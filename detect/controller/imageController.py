@@ -7,6 +7,7 @@ from detect.utils.convertor import model_obj_to_dict
 from detect.utils.filter import get_filter_by_request
 from detect.core.imageCompre import compare_image
 import cv2
+import time
 import numpy as np
 from io import BytesIO
 from django.core.files import File
@@ -14,6 +15,10 @@ from django.core.files import File
 
 # Create your views here.
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+
+from detect.projector.laserProjector import LaserProjector
+
+projector = None
 
 
 def test(request):
@@ -35,6 +40,42 @@ def get_image_list(request):
     except EmptyPage:
         page_info = paginator.page(paginator.num_pages)
     return JsonResponse({"data": [i for i in page_info], "total": paginator.count})
+
+
+def get_image_and_project(request):
+    global projector
+    if projector is None:
+        projector = LaserProjector()
+    param_filter = get_filter_by_request(request, ImgStore)
+    page_num = request.GET.get("page_num")
+    page_size = request.GET.get("page_size")
+    img_list = param_filter.values("img_id", "product_name", "part_no", "batch_no",
+                                   "plane_no", "img_content", "create_time", "update_time", "is_basic_img",
+                                   "compare_status").order_by("img_id")
+    paginator = Paginator(img_list, page_size)
+    try:
+        page_info = paginator.page(page_num)
+    except PageNotAnInteger:
+        page_info = paginator.page(1)
+    except EmptyPage:
+        page_info = paginator.page(paginator.num_pages)
+    if paginator.count == 1:
+        item = img_list[0]
+        stored_img = ImgStore.objects.filter(img_id=item["img_id"])[0]
+        image = cv2.imdecode(np.frombuffer(stored_img.img_content_org.file.read(), np.uint8), cv2.IMREAD_COLOR)
+        stored_img.img_content.file.close()
+        projector.project_image(image)
+    return JsonResponse({"data": [i for i in page_info], "total": paginator.count})
+    pass
+
+
+def project_empty_image(request):
+    global projector
+    if projector is None:
+        projector = LaserProjector()
+    projector.empty_projection()
+    time.sleep(0.5)
+    return JsonResponse({"status": "success"})
 
 
 def get_image_list_all(request):
@@ -66,6 +107,7 @@ def set_basic_img(request):
         image.save()
         ret = model_obj_to_dict(image)
         ret["img_content"] = str(ret["img_content"])
+        ret["img_content_org"] = str(ret["img_content_org"])
         ret.pop("img_feature")
         return JsonResponse({"data": ret})
     else:
@@ -78,24 +120,31 @@ def image_upload(request):
         return JsonResponse({"msg": "请选择上传文件！"})
 
     # 缩小图片
-    resize_image = cv2.imdecode(np.frombuffer(image.read(), np.uint8), cv2.IMREAD_COLOR)
+    org_image = cv2.imdecode(np.frombuffer(image.read(), np.uint8), cv2.IMREAD_COLOR)
     min_width = 1800
-    resize_image = cv2.resize(resize_image, dsize=(
-        min_width, int(min_width * resize_image.shape[0] / resize_image.shape[1])))
+    resize_image = cv2.resize(org_image, dsize=(
+        min_width, int(min_width * org_image.shape[0] / org_image.shape[1])))
     _, enc_img = cv2.imencode('.jpg', resize_image)
     io = BytesIO(enc_img.tobytes())
     img_file = File(io)
     img_file.name = image.name.split(".")[0] + ".jpg"
 
+    _, org_enc_img = cv2.imencode('.jpg', org_image)
+    org_io = BytesIO(org_enc_img.tobytes())
+    org_img_file = File(org_io)
+    org_img_file.name = image.name.split(".")[0] + ".jpg"
+
     img = ImgStore(product_name=request.POST["product_name"],
                    part_no=image.name.split(".")[0],
                    batch_no=request.POST["batch_no"],
                    plane_no=request.POST["plane_no"],
-                   img_content=img_file)
+                   img_content=img_file,
+                   img_content_org=org_img_file)
 
     compare_image(img)
     ret = model_obj_to_dict(img)
     ret["img_content"] = str(ret["img_content"])
+    ret["img_content_org"] = str(ret["img_content_org"])
     ret.pop("img_feature")
     return JsonResponse({"data": ret})
 
