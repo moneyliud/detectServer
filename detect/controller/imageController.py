@@ -20,6 +20,15 @@ def test(request):
     return JsonResponse({"msg": "成功123123！"})
 
 
+def get_image_by_id(request):
+    img_id = request.GET.get("img_id")
+    img = ImgStore.objects.get(img_id=img_id)
+    ret = model_obj_to_dict(img)
+    ret["img_content"] = str(ret["img_content"])
+    ret.pop("img_feature")
+    return JsonResponse({"data": ret})
+
+
 def get_image_list(request):
     param_filter = get_filter_by_request(request, ImgStore)
     page_num = request.GET.get("page_num")

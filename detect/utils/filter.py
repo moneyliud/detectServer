@@ -8,7 +8,10 @@ def get_filter_by_request(request, model):
             params[i] = request.GET.get(i)
     query = Q()
     for j in params:
-        query.add(Q(**{j + "__contains": params[j]}), Q.AND)
+        if "id" in j:
+            query.add(Q(**{j + "__exact": params[j]}), Q.AND)
+        else:
+            query.add(Q(**{j + "__contains": params[j]}), Q.AND)
     return model.objects.filter(query).extra(
         select={"create_time": "date(create_time)",
                 "update_time": "date(update_time)"})
