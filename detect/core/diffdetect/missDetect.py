@@ -394,8 +394,8 @@ class MissDetect:
             diff_flag = False
             while True:
                 # 太短或面积太小的边缘不采用梯度查找的方式，直接在周边搜索，过滤孔位、墩头等微小偏差，如果没有差异直接判断为没有差异
-                if self.__short_contours_filter(contours[i], contour_img1, contour_img2, len_threshold=20,
-                                                search_range=7, area_threshold=50):
+                if self.__short_contours_filter(contours[i], contour_img1, contour_img2, len_threshold=50,
+                                                search_range=15, area_threshold=100):
                     break
                 # 选择出图1图2均值相差太大的边缘，直接列为差异边缘
                 if self.__mean_value_filter(contours_nearest_dis1[i], contours_nearest_dis2[i], threshold):

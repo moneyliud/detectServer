@@ -15,6 +15,14 @@ def image_dir_path(instance, filename):
     return os.path.join(instance.product_name, instance.batch_no, filename)
 
 
+def org_image_dir_path(instance, filename):
+    ext = filename.split(".").pop()
+    filename = 'org_{0}{1}{2}-{3}.{4}'.format(instance.product_name, instance.batch_no, instance.plane_no,
+                                              instance.part_no, ext)
+    # print(os.path.join(instance.product_name, instance.batch_no, filename))
+    return os.path.join(instance.product_name, instance.batch_no, filename)
+
+
 def result_image_dir_path(instance, filename):
     f_split = filename.split(".")
     ext = f_split.pop()
@@ -41,6 +49,7 @@ class ImgStore(models.Model):
     batch_no = models.CharField(max_length=10, help_text="批次")
     plane_no = models.CharField(max_length=10, help_text="架次")
     img_content = models.ImageField(upload_to=image_dir_path, help_text="图像内容", blank=True, null=True)
+    img_content_org = models.ImageField(upload_to=org_image_dir_path, help_text="原始图像内容", blank=True, null=True)
     img_feature = models.BinaryField(max_length=1024 * 1024 * 50, help_text="图像特征")
     is_basic_img = models.BooleanField('是否为基准图像', default=True)
     compare_status = models.CharField('对比状态', max_length=20, default=IMG_COMPARE_STATUS.UN_COMPARE.value)

@@ -64,6 +64,7 @@ def compare_image_func(image: ImgStore):
         dst_image = image
         dst_image.is_basic_img = False
         dst_image.save()
+        # detector = MissDetect()
         detector = DeepDetect()
         src_image_cv = cv2.imdecode(np.frombuffer(src_image.img_content.file.read(), np.uint8), cv2.IMREAD_COLOR)
         dst_image_cv = cv2.imdecode(np.frombuffer(dst_image.img_content.file.read(), np.uint8), cv2.IMREAD_COLOR)
@@ -87,6 +88,8 @@ def compare_image_func(image: ImgStore):
             print("file closed")
         except Exception as e:
             print(e)
+            print(e.__traceback__.tb_frame.f_globals["__file__"])
+            print(e.__traceback__.tb_lineno)
             src_image.img_content.file.close()
             dst_image.img_content.file.close()
             dst_image.compare_status = IMG_COMPARE_STATUS.COMPARE_ERROR.value
