@@ -1,6 +1,6 @@
 from django.urls import path, include
 
-from detect.controller import imageController
+from detect.controller import imageController, labelController
 
 urlpatterns = [
     path("test/", imageController.test, name="test1"),
@@ -11,8 +11,11 @@ urlpatterns = [
     path("get_dict_item/", imageController.get_dict_item, name="get_dict_item"),
     path("set_basic_img/", imageController.set_basic_img, name="set_basic_img"),
     path("get_image_list_all/", imageController.get_image_list_all, name="get_image_list_all"),
-    path("get_image_by_id", imageController.get_image_by_id, name="get_image_by_id")
+    path("get_image_by_id", imageController.get_image_by_id, name="get_image_by_id"),
     path("get_image_and_project/", imageController.get_image_and_project, name="get_image_and_project"),
-    path("project_empty_image/", imageController.project_empty_image, name="project_empty_image")
+    path("project_empty_image/", imageController.project_empty_image, name="project_empty_image"),
     # path("get_camera_stream/", imageController.get_camera_stream, name="get_camera_stream")
+    path("get_label_list/", labelController.get_label_list),
+    path("get_label_msg_list/", labelController.get_label_msg_list),
+    path("save_label_msg/", labelController.save_label_msg)
 ]

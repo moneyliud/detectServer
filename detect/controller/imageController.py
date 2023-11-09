@@ -30,6 +30,8 @@ def get_image_by_id(request):
     img = ImgStore.objects.get(img_id=img_id)
     ret = model_obj_to_dict(img)
     ret["img_content"] = str(ret["img_content"])
+    ret["width"] = img.img_content.width
+    ret["height"] = img.img_content.height
     ret.pop("img_feature")
     return JsonResponse({"data": ret})
 

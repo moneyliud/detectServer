@@ -98,6 +98,39 @@ class ImgCompareResultV(models.Model):
         db_table = "img_compare_result_v"
 
 
+class ImgLabel(models.Model):
+    label_id = models.AutoField(primary_key=True, help_text="标签ID")
+    label_en = models.CharField(max_length=20, help_text="标签英文名")
+    label_cn = models.CharField(max_length=20, help_text="标签中文名")
+    color = models.CharField(max_length=20, help_text="颜色")
+    create_time = models.DateTimeField('创建时间', default=timezone.now)
+    update_time = models.DateTimeField('修改时间', auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = "img_label"
+
+
+class ImgLabelMsg(models.Model):
+    label_msg_id = models.AutoField(primary_key=True, help_text="标注信息ID")
+    img_id = models.IntegerField('图片ID')
+    label_id = models.IntegerField('标签ID')
+    x = models.FloatField()
+    y = models.FloatField()
+    w = models.FloatField()
+    h = models.FloatField()
+    create_time = models.DateTimeField('创建时间', default=timezone.now)
+    update_time = models.DateTimeField('修改时间', auto_now=True)
+
+    def __str__(self):
+        return str(self.img_id) + "," + str(self.label_id) + "," + str(self.label_msg_id) + \
+            "," + str(self.x) + "," + str(self.y) + "," + str(self.w) + "," + str(self.h) + ","
+
+    class Meta:
+        managed = False
+        db_table = "img_label_msg"
+
+
 class SysDict(models.Model):
     dict_id = models.AutoField(primary_key=True, help_text="字典ID")
     dict_name = models.CharField('字典名称', max_length=50)
