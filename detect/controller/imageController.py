@@ -1,7 +1,7 @@
 import json
 
 import django.core.management.base
-from detect.djangomodels import ImgStore, ImgCompareResult, ImgCompareResultV, SysDict, SysDictItem
+from detect.djangomodels import ImgStore, ImgCompareResult, ImgCompareResultV, SysDict, SysDictItem, ImgLabelMsg
 from django.http import JsonResponse, StreamingHttpResponse
 from detect.utils.convertor import model_obj_to_dict
 from detect.utils.filter import get_filter_by_request
@@ -165,6 +165,7 @@ def delete_image(request):
     if img_id is not None:
         image = ImgStore.objects.get(img_id=img_id)
         image.img_content.delete(False)
+        ImgLabelMsg.objects.filter(img_id=img_id).delete()
         image.delete()
         pass
     else:

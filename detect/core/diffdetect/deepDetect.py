@@ -50,7 +50,8 @@ class DeepDetect:
         self.result_img = None
         self.line_width = None
         self.same_color = (11, 255, 11)  # bgr
-        self.diff_color = (10, 10, 255)  # bgr
+        self.diff_color1 = (73, 73, 255)  # bgr 漏装颜色 红
+        self.diff_color2 = (0, 126, 227)  # bgr 多装颜色 橙色
         self.class_filter = None
         self.class_names = None
         self.draw_label = True
@@ -88,7 +89,16 @@ class DeepDetect:
             self.class_filter = np.int32(cnn_items['class_filter'].split(","))
             self.class_names = cnn_items['class_name'].split(",")
 
-    def detect(self, img1, img2):
+    def detect_one(self, img):
+        img_org = img.copy()
+        gray_tolerance = 35
+        detect_range, mask = detectUtil.find_image_primary_area(img, tolerance=gray_tolerance)
+        img_r = img_org.copy()
+        img_r[np.where(detect_range[:, :] == 0)] = [0, 0, 0]
+        result = self.__detect_one_image(img_r)
+        return result
+
+    def detect(self, img1, img2, base_label=None):
         self.img1 = img1
         self.img2 = img2
         self.line_width = max(round(sum(img1.shape) / 2 * 0.0015), 2)
@@ -124,42 +134,191 @@ class DeepDetect:
         img2_r = self.img2.copy()
         img1_r[np.where(self.detect_range1[:, :] == 0)] = [0, 0, 0]
         img2_r[np.where(self.detect_range2[:, :] == 0)] = [0, 0, 0]
-        result1 = self.__detect_one_image(img1_r)
+        result1 = base_label
+        if base_label is None or len(base_label) == 0:
+            result1 = self.__detect_one_image(img1_r)
         result2 = self.__detect_one_image(img2_r)
         # print(result1, result2)
-        same_obj, diff_obj = self.__find_difference(result1, result2)
+        same_obj, diff_obj1, diff_obj2 = self.__find_difference(result1, result2)
         # print(same_obj, diff_obj)
-        out_img = self.__draw_result(same_obj, diff_obj)
-        all_result = diff_obj
+        out_img = self.__draw_result(same_obj, diff_obj1, diff_obj2)
+        all_result = diff_obj1 + diff_obj2
         self.__output_img("result", out_img)
         return out_img, all_result
 
+    def __detail_detect(self, detect_area):
+        x1, y1, x2, y2 = int(detect_area[0]), int(detect_area[1]), int(detect_area[2]), int(detect_area[3])
+        # sub_img1, sub_img2 = np.zeros((x2 - x1, y2 - y1, 3)), np.zeros((x2 - x1, y2 - y1, 3))
+        sub_img1 = self.img1[y1:y2, x1:x2, :]
+        sub_img2 = self.img2[y1:y2, x1:x2, :]
+        self.__output_img("sub_img1", sub_img1)
+        self.__output_img("sub_img2", sub_img2)
+        img1_gray = cv2.cvtColor(deepcopy(sub_img1), cv2.COLOR_BGR2GRAY)
+        img2_gray = cv2.cvtColor(deepcopy(sub_img2), cv2.COLOR_BGR2GRAY)
+        # canny边缘提取
+        img1_contours = cv2.Canny(img1_gray, 50, 80)
+        img2_contours = cv2.Canny(img2_gray, 50, 80)
+        img1_gray = cv2.bilateralFilter(img1_gray, 5, 75, 75)
+        img2_gray = cv2.bilateralFilter(img2_gray, 5, 75, 75)
+        # 图像1减图像2
+        sub = cv2.subtract(img1_gray, img2_gray)
+        # 图像2减图象1
+        sub2 = cv2.subtract(img2_gray, img1_gray)
+        # 查找相减后的图像梯度
+        grad_dir1 = detectUtil.calculate_grad_direction(sub)
+        grad_dir2 = detectUtil.calculate_grad_direction(sub2)
+        sub_contours = cv2.Canny(sub, 80, 140)
+        sub_contours2 = cv2.Canny(sub2, 80, 140)
+        # 查找所有轮廓，并以列表形式给出(RETR_LIST),轮廓包含所有点（CHAIN_APPROX_NONE）,不使用近似
+        contour_list1 = cv2.findContours(sub_contours, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)[0]
+        contour_list2 = cv2.findContours(sub_contours2, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)[0]
+        contour_list1 = detectUtil.remove_duplicated_contours(contour_list1)
+        contour_list2 = detectUtil.remove_duplicated_contours(contour_list2)
+        contours = self.__same_contour_filter(contour_list1, grad_dir1, img1_contours, img2_contours)
+        contours2 = self.__same_contour_filter(contour_list2, grad_dir2, img2_contours, img1_contours)
+        return len(contours) > 0 or len(contours2) > 0
+        pass
+
+    def __same_contour_filter(self, contours, grad_dir, contour_img1, contour_img2):
+        max_dis = int(math.sqrt(contour_img1.shape[0] ** 2 + contour_img1.shape[1] ** 2))
+        contours_nearest_dis1 = []
+        contours_nearest_dis2 = []
+        threshold = 8
+        for i in range(len(contours)):
+            l_len = len(contours[i])
+            contours_nearest_dis1.append(np.array([max_dis] * l_len))
+            contours_nearest_dis2.append(np.array([max_dis] * l_len))
+        for i in range(len(contours)):
+            for j in range(len(contours[i])):
+                x = contours[i][j][0][0]
+                y = contours[i][j][0][1]
+                find_flag = np.full(2, False)
+                step = 0
+                while not (find_flag == True).all():
+                    step_x = int(step * grad_dir[y, x][0])
+                    step_y = int(step * grad_dir[y, x][1])
+                    dis = math.sqrt(step_x ** 2 + step_y ** 2)
+                    searchxy = np.zeros([4, 4], dtype=np.int32)
+                    contour_imgs = [contour_img1, contour_img2]
+                    contours_nearest_dis_list = [contours_nearest_dis1, contours_nearest_dis2]
+                    # 延法矢和垂直于法矢共4个方向搜索最短距离
+                    searchxy[0] = [x + step_x, y + step_y, x - step_x, y - step_y]
+                    searchxy[1] = [x + step_y, y + step_x, x - step_y, y - step_x]
+                    for k in range(len(find_flag)):
+                        if not find_flag[k]:
+                            find_flag_ret = detectUtil.find_nearest_point(searchxy[0][0], searchxy[0][1],
+                                                                          searchxy[0][2], searchxy[0][3],
+                                                                          contour_imgs[k])
+                            find_flag[k] |= find_flag_ret
+                            if find_flag_ret:
+                                contours_nearest_dis_list[k][i][j] = dis
+                            find_flag_ret = detectUtil.find_nearest_point(searchxy[1][0], searchxy[1][1],
+                                                                          searchxy[1][2], searchxy[1][3],
+                                                                          contour_imgs[k])
+                            find_flag[k] |= find_flag_ret
+                            if find_flag_ret:
+                                contours_nearest_dis_list[k][i][j] = dis
+
+                    step += 1
+        diff_contours = []
+        for i in range(len(contours)):
+            diff_flag = False
+            while True:
+                # 太短或面积太小的边缘不采用梯度查找的方式，直接在周边搜索，过滤孔位、墩头等微小偏差，如果没有差异直接判断为没有差异
+                if self.__short_contours_filter(contours[i], contour_img1, contour_img2, len_threshold=50,
+                                                search_range=8, area_threshold=100):
+                    break
+                # 选择出图1图2均值相差太大的边缘，直接列为差异边缘
+                if self.__mean_value_filter(contours_nearest_dis1[i], contours_nearest_dis2[i], threshold):
+                    diff_flag = True
+                    break
+                break
+            if diff_flag:
+                diff_contours.append(contours[i])
+        return diff_contours
+
+    def __mean_value_filter(self, nearest_dis1, nearest_dis2, threshold=8):
+        mean1 = np.mean(nearest_dis1)
+        mean2 = np.mean(nearest_dis2)
+        if mean2 > threshold or mean1 > threshold:
+            return True
+        return False
+
+    def __short_contours_filter(self, contour, contour_img1, contour_img2, len_threshold=10, area_threshold=25,
+                                search_range=7):
+        contour_near_flag_tmp = np.full((len(contour), 2), False)
+        contour_near_flag = [False] * len(contour)
+        p_list = np.reshape(contour, (-1, 2))
+        min_x = np.min(p_list[:, 0])
+        max_x = np.max(p_list[:, 0])
+        min_y = np.min(p_list[:, 1])
+        max_y = np.max(p_list[:, 1])
+        area = (max_x - min_x) * (max_y - min_y)
+        if len(contour) <= len_threshold or area <= area_threshold:
+            for i in range(len(contour)):
+                x = contour[i][0][0]
+                y = contour[i][0][1]
+                for step in range(0, search_range):
+                    flag1, flag2 = detectUtil.search_exist_point(x - step, x + step, y - step, y + step, contour_img1,
+                                                                 contour_img2)
+                    contour_near_flag_tmp[i][0] |= flag1
+                    contour_near_flag_tmp[i][1] |= flag2
+                    contour_near_flag[i] = contour_near_flag_tmp[i][0] and contour_near_flag_tmp[i][1]
+                    if contour_near_flag[i]:
+                        break
+            t_len = len(np.where(contour_near_flag)[0])
+            if t_len / len(contour) > 0.5:
+                return True
+            else:
+                return False
+        else:
+            return False
+
     def __find_difference(self, result1, result2):
-        used_flag1 = [False] * len(result1)
-        used_flag2 = [False] * len(result2)
+        # [x1 ,y1 ,x2 ,y2 ,conf , class, auto_detect 自动识别 ,enable 是否生效]
+        compare_flag1 = [0] * len(result1)
+        compare_flag2 = [0] * len(result2)
+        result1 = torch.tensor(result1)
+        result2 = torch.tensor(result2)
         for i in range(len(result1)):
             for j in range(len(result2)):
                 iou_result = box_iou(result1[i][0:4].unsqueeze(0), result2[j][0:4].unsqueeze(0)).squeeze(0)
                 if iou_result > self.iou_threshold:
-                    used_flag1[i] = True
-                    used_flag2[j] = True
-        same_obj, diff_obj = [], []
+                    # 若该标签不生效,状态置为2
+                    if not result1[i][-1]:
+                        compare_flag1[i] = 2
+                        compare_flag2[j] = 2
+                    else:
+                        compare_flag1[i] = 1
+                        compare_flag2[j] = 1
+        same_obj, diff_obj_1, diff_obj_2 = [], [], []
         for i in range(len(result1)):
-            if used_flag1[i]:
+            if compare_flag1[i] == 1:
                 same_obj.append(result1[i])
-            else:
-                diff_obj.append(result1[i])
+            elif compare_flag1[i] == 0:
+                # 如果不是自动识别的特征，用传统算法做进一步处理：
+                if result1[i][6] == 0:
+                    detail_ret = self.__detail_detect(result1[i])
+                    # 如果不一致
+                    if detail_ret:
+                        diff_obj_1.append(result1[i])
+                    else:
+                        same_obj.append(result1[i])
+                else:
+                    diff_obj_1.append(result1[i])
         for i in range(len(result2)):
-            if not used_flag2[i]:
-                diff_obj.append(result2[i])
-        return same_obj, diff_obj
+            if compare_flag2[i] == 0:
+                diff_obj_2.append(result2[i])
+        return same_obj, diff_obj_1, diff_obj_2
 
-    def __draw_result(self, same_obj, diff_obj):
+    def __draw_result(self, same_obj, diff_obj1, diff_obj2):
         self.result_img = self.__get_contrast_img()
         for i in same_obj:
             self.__draw_box(i, self.same_color)
-        for i in diff_obj:
-            self.__draw_box(i, self.diff_color)
+        for i in diff_obj1:
+            self.__draw_box(i, self.diff_color1)
+        for i in diff_obj2:
+            self.__draw_box(i, self.diff_color2)
         return self.result_img
 
     def __draw_box(self, box, color):
@@ -213,6 +372,8 @@ class DeepDetect:
         det = pred[0]
         if len(det):
             det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()
+            # [x1 ,y1 ,x2 ,y2 ,conf , class, auto_detect 自动识别 ,enable 是否生效]
+            det = np.concatenate((det, np.ones((det.shape[0], 2), dtype=int)), axis=1)
             return det
         else:
             return []

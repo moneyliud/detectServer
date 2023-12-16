@@ -55,6 +55,7 @@ class ImgStore(models.Model):
     compare_status = models.CharField('对比状态', max_length=20, default=IMG_COMPARE_STATUS.UN_COMPARE.value)
     create_time = models.DateTimeField('创建时间', default=timezone.now)
     update_time = models.DateTimeField('修改时间', auto_now=True)
+    is_detected = models.BooleanField('是否已提取标签', default=False)
 
     class Meta:
         db_table = "img_store"
@@ -112,23 +113,27 @@ class ImgLabel(models.Model):
 
 
 class ImgLabelMsg(models.Model):
-    label_msg_id = models.AutoField(primary_key=True, help_text="标注信息ID")
+    label_msg_id = models.AutoField(primary_key=True, help_text="标签信息ID")
     img_id = models.IntegerField('图片ID')
     label_id = models.IntegerField('标签ID')
     x = models.FloatField()
     y = models.FloatField()
     w = models.FloatField()
     h = models.FloatField()
+    enable = models.IntegerField("是否启用")
+    auto_detect = models.IntegerField("是否自动识别的")
+    conf = models.FloatField("置信度")
     create_time = models.DateTimeField('创建时间', default=timezone.now)
     update_time = models.DateTimeField('修改时间', auto_now=True)
 
     def __str__(self):
         return str(self.img_id) + "," + str(self.label_id) + "," + str(self.label_msg_id) + \
-            "," + str(self.x) + "," + str(self.y) + "," + str(self.w) + "," + str(self.h) + ","
+               "," + str(self.x) + "," + str(self.y) + "," + str(self.w) + "," + str(self.h) + ","
 
     class Meta:
         managed = False
         db_table = "img_label_msg"
+
 
 
 class SysDict(models.Model):
